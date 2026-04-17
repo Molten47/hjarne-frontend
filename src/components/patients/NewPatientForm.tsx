@@ -1,5 +1,5 @@
 import { useState }     from 'react'
-import { X, Loader2 }   from 'lucide-react'
+import { X, Loader2, CheckCircle, Copy, Check }   from 'lucide-react'
 import { useCreatePatient } from '@/hooks/usePatients'
 
 interface Props {
@@ -14,8 +14,10 @@ const INITIAL = {
 }
 
 export const NewPatientForm = ({ open, onClose }: Props) => {
-  const [form, setForm] = useState(INITIAL)
-  const [error, setError] = useState<string | null>(null)
+  const [form, setForm]       = useState(INITIAL)
+  const [error, setError]     = useState<string | null>(null)
+  const [created, setCreated] = useState<{ mrn: string; name: string } | null>(null)
+  const [copied, setCopied]   = useState(false)
   const { mutateAsync, isPending } = useCreatePatient()
 
   if (!open) return null
@@ -32,21 +34,34 @@ export const NewPatientForm = ({ open, onClose }: Props) => {
       return
     }
     try {
-      await mutateAsync({
+      const patient = await mutateAsync({
         ...form,
         height_cm: form.height_cm ? parseFloat(form.height_cm) : undefined,
         weight_kg: form.weight_kg ? parseFloat(form.weight_kg) : undefined,
       })
+      setCreated({ mrn: patient.mrn, name: `${patient.first_name} ${patient.last_name}` })
       setForm(INITIAL)
-      onClose()
     } catch {
       setError('Failed to register patient. Please try again.')
     }
   }
 
+  const handleClose = () => {
+    setCreated(null)
+    setCopied(false)
+    onClose()
+  }
+
+  const copyCredentials = () => {
+    if (!created) return
+    navigator.clipboard.writeText(`MRN: ${created.mrn}\nPassword: patient123`)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-         onClick={e => e.target === e.currentTarget && onClose()}>
+         onClick={e => e.target === e.currentTarget && handleClose()}>
 
       {/* backdrop */}
       <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" />
@@ -59,17 +74,78 @@ export const NewPatientForm = ({ open, onClose }: Props) => {
         <div className="flex items-center justify-between px-6 py-5
                         border-b border-slate-100 sticky top-0 bg-white z-10">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Register Patient</h2>
+            <h2 className="text-lg font-semibold text-slate-900">
+              {created ? 'Patient Registered' : 'Register Patient'}
+            </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              New patient record — all starred fields required
+              {created
+                ? 'Record created and portal access granted'
+                : 'New patient record — all starred fields required'}
             </p>
           </div>
-          <button onClick={onClose}
+          <button onClick={handleClose}
             className="text-slate-400 hover:text-slate-600 transition-colors p-1">
             <X size={20} />
           </button>
         </div>
 
+        {/* ── Success state ── */}
+        {created ? (
+          <div className="px-6 py-8 flex flex-col items-center gap-5 text-center">
+            <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center">
+              <CheckCircle size={28} className="text-emerald-500" />
+            </div>
+
+            <div>
+              <p className="font-semibold text-slate-900 text-base">{created.name}</p>
+              <p className="text-sm text-slate-500 mt-0.5">has been added to the system</p>
+            </div>
+
+            {/* portal credentials card */}
+            <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-left">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                Portal Access Credentials
+              </p>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">MRN (username)</span>
+                  <span className="font-mono text-sm font-semibold text-slate-800">
+                    {created.mrn}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Temporary password</span>
+                  <span className="font-mono text-sm font-semibold text-slate-800">
+                    patient123
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={copyCredentials}
+                className="mt-4 w-full flex items-center justify-center gap-2
+                           py-2 rounded-lg border border-slate-300 text-xs
+                           font-medium text-slate-600 hover:bg-white transition">
+                {copied
+                  ? <><Check size={13} className="text-emerald-500" /> Copied</>
+                  : <><Copy size={13} /> Copy credentials</>}
+              </button>
+
+              <p className="text-xs text-slate-400 mt-3 text-center">
+                In production, these would be sent to the patient via email invite.
+              </p>
+            </div>
+
+            <button onClick={handleClose}
+              className="w-full py-2.5 rounded-lg bg-sky-600 hover:bg-sky-700
+                         text-white text-sm font-medium transition">
+              Done
+            </button>
+          </div>
+
+        ) : (
+
+        /* ── Form state ── */
         <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4">
 
           {error && (
@@ -79,7 +155,6 @@ export const NewPatientForm = ({ open, onClose }: Props) => {
             </div>
           )}
 
-          {/* name row */}
           <div className="grid grid-cols-2 gap-4">
             <Field label="First Name *" value={form.first_name}
               onChange={v => set('first_name', v)} placeholder="e.g. Sophia" />
@@ -87,7 +162,6 @@ export const NewPatientForm = ({ open, onClose }: Props) => {
               onChange={v => set('last_name', v)} placeholder="e.g. Tremblay" />
           </div>
 
-          {/* dob + gender */}
           <div className="grid grid-cols-2 gap-4">
             <Field label="Date of Birth *" value={form.date_of_birth}
               onChange={v => set('date_of_birth', v)} type="date" />
@@ -97,7 +171,6 @@ export const NewPatientForm = ({ open, onClose }: Props) => {
               labels={['Select gender', 'Male', 'Female', 'Other']} />
           </div>
 
-          {/* blood + genotype */}
           <div className="grid grid-cols-2 gap-4">
             <SelectField label="Blood Group" value={form.blood_group}
               onChange={v => set('blood_group', v)}
@@ -109,7 +182,6 @@ export const NewPatientForm = ({ open, onClose }: Props) => {
               labels={['Unknown', 'AA', 'AS', 'SS', 'AC', 'SC']} />
           </div>
 
-          {/* height + weight */}
           <div className="grid grid-cols-2 gap-4">
             <Field label="Height (cm)" value={form.height_cm}
               onChange={v => set('height_cm', v)}
@@ -119,13 +191,11 @@ export const NewPatientForm = ({ open, onClose }: Props) => {
               type="number" placeholder="e.g. 70" />
           </div>
 
-          {/* nationality */}
           <Field label="Nationality" value={form.nationality}
             onChange={v => set('nationality', v)} placeholder="e.g. Canadian" />
 
-          {/* actions */}
           <div className="flex gap-3 pt-2 border-t border-slate-100">
-            <button type="button" onClick={onClose}
+            <button type="button" onClick={handleClose}
               className="flex-1 py-2.5 rounded-lg border border-slate-300
                          text-sm font-medium text-slate-600
                          hover:bg-slate-50 transition">
@@ -140,6 +210,7 @@ export const NewPatientForm = ({ open, onClose }: Props) => {
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   )

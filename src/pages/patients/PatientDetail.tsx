@@ -6,6 +6,7 @@ import { apiClient }                       from '@/api/client'
 import { portalApi }                       from '@/api/portal'
 import { useAuth }                         from '@/hooks/useAuth'
 import type { ApiResponse }                from '@/types'
+import { patientsApi } from '@/api/patients'
 
 interface PatientFull {
   id:            string
@@ -41,14 +42,12 @@ const [inviteEmail, setInviteEmail] = useState('')
   const qc        = useQueryClient()
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  const { data: patient, isLoading } = useQuery({
-    queryKey: ['patient', id],
-    queryFn:  async () => {
-      const res = await apiClient.get<ApiResponse<PatientFull>>(`/patients/${id}`)
-      return res.data.data!
-    },
-    enabled: !!id,
-  })
+// PatientDetail.tsx — replace the useQuery block
+const { data: patient, isLoading } = useQuery({
+  queryKey: ['patient', id],
+  queryFn:  () => patientsApi.get(id!),   // ← direct mock API, not apiClient
+  enabled:  !!id,
+})
 
   const { data: thread = [] } = useQuery({
     queryKey: ['patient-messages', id],

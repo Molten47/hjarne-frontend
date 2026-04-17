@@ -1,16 +1,21 @@
-import { apiClient } from './client'
-import type { ApiResponse } from '../types'
+// src/api/portal.ts — mock implementation
+import {
+  db, delay,
+  MOCK_PORTAL_CREDENTIALS,
+  MOCK_PORTAL_ME,
+  MOCK_PORTAL_APPOINTMENTS,
+  MOCK_PORTAL_CASES,
+  MOCK_PORTAL_DIAGNOSES,
+} from '../mock/MockData'
 
-export interface PortalLoginPayload {
-  mrn:      string
-  password: string
-}
+// ── Re-export all types so nothing else needs to change ──────
+export interface PortalLoginPayload { mrn: string; password: string }
 
 export interface PortalUser {
-  patient_id: string
-  mrn:        string
-  first_name: string
-  last_name:  string
+  patient_id:    string
+  mrn:           string
+  first_name:    string
+  last_name:     string
   access_token:  string
   refresh_token: string
   expires_in:    number
@@ -111,86 +116,103 @@ export interface UpdateProfilePayload {
   country?:        string
 }
 
+// ── API ───────────────────────────────────────────────────────
 export const portalApi = {
   login: async (payload: PortalLoginPayload): Promise<PortalUser> => {
-    const res = await apiClient.post<ApiResponse<PortalUser>>(
-      '/portal/login', payload
-    )
-    return res.data.data!
+    await delay(400)
+    const entry = MOCK_PORTAL_CREDENTIALS[payload.mrn]
+    if (!entry || entry.password !== payload.password)
+      throw new Error('Invalid MRN or password')
+    return entry.user
   },
 
-  setup: async (token: string, password: string): Promise<void> => {
-    await apiClient.post('/portal/setup', { token, password })
+  setup: async (_token: string, _password: string): Promise<void> => {
+    await delay(300)
   },
 
   me: async (): Promise<PortalMe> => {
-    const res = await apiClient.get<ApiResponse<PortalMe>>('/portal/me')
-    return res.data.data!
+    await delay()
+    return { ...MOCK_PORTAL_ME }
   },
 
   appointments: async (): Promise<PortalAppointment[]> => {
-    const res = await apiClient.get<ApiResponse<PortalAppointment[]>>(
-      '/portal/appointments'
-    )
-    return res.data.data ?? []
+    await delay()
+    return [...MOCK_PORTAL_APPOINTMENTS]
   },
 
   cases: async (): Promise<PortalCase[]> => {
-    const res = await apiClient.get<ApiResponse<PortalCase[]>>('/portal/cases')
-    return res.data.data ?? []
+    await delay()
+    return [...MOCK_PORTAL_CASES]
   },
 
   diagnoses: async (caseId: string): Promise<PortalDiagnosis[]> => {
-    const res = await apiClient.get<ApiResponse<PortalDiagnosis[]>>(
-      `/portal/cases/${caseId}/diagnoses`
-    )
-    return res.data.data ?? []
+    await delay()
+    return MOCK_PORTAL_DIAGNOSES[caseId] ?? []
   },
 
   messages: async (): Promise<PortalMessage[]> => {
-    const res = await apiClient.get<ApiResponse<PortalMessage[]>>(
-      '/portal/messages'
-    )
-    return res.data.data ?? []
+    await delay()
+    return [...db.portalMessages]
   },
 
-  sendMessage: async (staff_id: string, body: string): Promise<PortalMessage> => {
-    const res = await apiClient.post<ApiResponse<PortalMessage>>(
-      '/portal/messages', { staff_id, body }
-    )
-    return res.data.data!
+  sendMessage: async (_staff_id: string, body: string): Promise<PortalMessage> => {
+    await delay(300)
+    const msg: PortalMessage = {
+      id:          'pm' + Date.now(),
+      staff_id:    's2',
+      staff_name:  'Dr. Aisha Nkrumah',
+      body,
+      sender_type: 'patient',
+      sent_at:     new Date().toISOString(),
+      read_at:     null,
+    }
+    db.portalMessages.push(msg)
+    return msg
   },
 
   submitComplaint: async (subject: string, body: string): Promise<PortalComplaint> => {
-    const res = await apiClient.post<ApiResponse<PortalComplaint>>(
-      '/portal/complaints', { subject, body }
-    )
-    return res.data.data!
-  },
-staffSendMessage: async (patientId: string, body: string): Promise<void> => {
-    await apiClient.post(`/patients/${patientId}/messages`, { body })
-  },
-
-  staffGetMessages: async (patientId: string): Promise<PortalMessage[]> => {
-    const res = await apiClient.get<ApiResponse<PortalMessage[]>>(
-      `/patients/${patientId}/messages`
-    )
-    return res.data.data ?? []
+    await delay(300)
+    const complaint: PortalComplaint = {
+      id:           'pc' + Date.now(),
+      subject,
+      body,
+      status:       'submitted',
+      submitted_at: new Date().toISOString(),
+    }
+    db.portalComplaints.push(complaint)
+    return complaint
   },
 
-  sendInvite: async (patientId: string, email: string): Promise<void> => {
-    await apiClient.post(`/patients/${patientId}/invite`, { email })
+  staffSendMessage: async (_patientId: string, body: string): Promise<void> => {
+    await delay(300)
+    db.portalMessages.push({
+      id:          'pm' + Date.now(),
+      staff_id:    's2',
+      staff_name:  'Dr. Aisha Nkrumah',
+      body,
+      sender_type: 'staff',
+      sent_at:     new Date().toISOString(),
+      read_at:     null,
+    })
+  },
+
+  staffGetMessages: async (_patientId: string): Promise<PortalMessage[]> => {
+    await delay()
+    return [...db.portalMessages]
+  },
+
+  sendInvite: async (_patientId: string, _email: string): Promise<void> => {
+    await delay(300)
   },
 
   getProfile: async (): Promise<PortalProfile> => {
-    const res = await apiClient.get<ApiResponse<PortalProfile>>('/portal/profile')
-    return res.data.data!
+    await delay()
+    return { ...db.portalProfile }
   },
 
   updateProfile: async (payload: UpdateProfilePayload): Promise<PortalProfile> => {
-    const res = await apiClient.patch<ApiResponse<PortalProfile>>(
-      '/portal/profile', payload
-    )
-    return res.data.data!
+    await delay(300)
+    Object.assign(db.portalProfile, payload)
+    return { ...db.portalProfile }
   },
 }

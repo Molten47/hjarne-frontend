@@ -33,6 +33,10 @@ export interface Patient {
   date_of_birth: string
   gender: string
   blood_group?: string
+  // in types.ts — Patient interface
+  phone?:   string | null
+  email?:   string | null
+  address?: string | null
 }
 
 export interface Staff {

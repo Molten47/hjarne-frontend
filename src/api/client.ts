@@ -1,9 +1,12 @@
-import axios from 'axios'
-
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
-
-export const apiClient = axios.create({
-  baseURL: `${BASE_URL}/api/v1`,
-  headers: { 'Content-Type': 'application/json' },
-  timeout: 10000,
-})
+// src/api/client.ts — no-op stub (no real HTTP calls in mock mode)
+// Kept so imports don't break. Nothing uses it at runtime.
+export const apiClient = {
+  defaults: { headers: { common: {} as Record<string, string> } },
+  interceptors: {
+    request:  { use: () => {} },
+    response: { use: () => {} },
+  },
+  get:   async () => ({ data: {} }),
+  post:  async () => ({ data: {} }),
+  patch: async () => ({ data: {} }),
+}

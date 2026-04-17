@@ -1,35 +1,40 @@
-import { apiClient } from './client'
-import type { ApiResponse, LoginResponse, User } from '../types'
+// src/api/auth.ts — mock implementation
+import { db, delay, MOCK_USERS } from '../mock/MockData'
+import type { LoginResponse, User } from '../types'
 
 export const authApi = {
-  login: async (email: string, password: string) => {
-    const res = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', {
-      email,
-      password,
-    })
-    return res.data.data!
+  login: async (email: string, _password: string): Promise<LoginResponse> => {
+    await delay()
+    const entry = MOCK_USERS[email]
+    if (!entry) throw new Error('Invalid email or password')
+    return {
+      access_token:        entry.token,
+      refresh_token:       entry.token + '-refresh',
+      token_type:          'Bearer',
+      expires_in:          3600,
+      must_change_password: false,
+      user:                entry.user,
+    }
   },
 
-  refresh: async (refreshToken: string) => {
-    const res = await apiClient.post<ApiResponse<{
-      access_token: string
-      refresh_token: string
-      expires_in: number
-    }>>('/auth/refresh', { refresh_token: refreshToken })
-    return res.data.data!
+  refresh: async (_refreshToken: string) => {
+    await delay(100)
+    return { access_token: 'mock-token-refreshed', refresh_token: 'mock-refresh-new', expires_in: 3600 }
   },
 
-  changePassword: async (newPassword: string) => {
-    await apiClient.post('/auth/change-password', { new_password: newPassword })
+  changePassword: async (_newPassword: string) => {
+    await delay(200)
   },
 
-  me: async () => {
-    const res = await apiClient.get<ApiResponse<User>>('/auth/me')
-    return res.data.data!
+  me: async (): Promise<User> => {
+    await delay(100)
+    const raw = localStorage.getItem('hjarne_user')
+    if (raw) return JSON.parse(raw) as User
+    return MOCK_USERS['admin@hjarne.no'].user
   },
 
   logout: async () => {
-    await apiClient.post('/auth/logout')
+    await delay(100)
     localStorage.removeItem('hjarne_token')
     localStorage.removeItem('hjarne_refresh_token')
     localStorage.removeItem('hjarne_user')
