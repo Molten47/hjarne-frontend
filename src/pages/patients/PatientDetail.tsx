@@ -2,25 +2,11 @@ import { useState, useRef, useEffect }                        from 'react'
 import { useParams, useNavigate }          from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Mail, CheckCircle, MessageSquare, Send } from 'lucide-react'
-import { apiClient }                       from '@/api/client'
 import { portalApi }                       from '@/api/portal'
 import { useAuth }                         from '@/hooks/useAuth'
-import type { ApiResponse }                from '@/types'
 import { patientsApi } from '@/api/patients'
 
-interface PatientFull {
-  id:            string
-  mrn:           string
-  first_name:    string
-  last_name:     string
-  date_of_birth: string | null
-  gender:        string
-  blood_group:   string | null
-  phone:         string | null
-  email:         string | null
-  address:       string | null
-  portal_active: boolean
-}
+
 
 const BLOOD_COLOR: Record<string, string> = {
   'O+': 'bg-red-50 text-red-600',   'O-': 'bg-red-100 text-red-700',
@@ -172,7 +158,7 @@ const { mutate: sendMsg, isPending: sendingMsg } = useMutation({
           </div>
 
           {/* thread */}
-          <div className="px-5 py-4 space-y-3 overflow-y-auto max-h-72 min-h-[120px]
+          <div className="px-5 py-4 space-y-3 overflow-y-auto max-h-72 min-h-30
                           bg-slate-50">
             {thread.length === 0 ? (
               <p className="text-center text-xs text-slate-400 py-6">

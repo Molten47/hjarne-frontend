@@ -1,5 +1,5 @@
 // src/api/auth.ts — mock implementation
-import { db, delay, MOCK_USERS } from '../mock/MockData'
+import { delay, MOCK_USERS } from '../mock/MockData'
 import type { LoginResponse, User } from '../types'
 
 export const authApi = {
