@@ -69,7 +69,7 @@ export const StatsRow = ({ role, data, loading }: Props) => {
   }
 
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
       {statMap[role]}
     </div>
   )
